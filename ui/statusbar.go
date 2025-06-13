@@ -1,0 +1,90 @@
+package ui
+
+import (
+	"fmt"
+
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+)
+
+type dirtState int
+
+const (
+	DirtStateUnchanged dirtState = iota
+	DirtStateDirty
+	DirtStateClean
+)
+
+func UpdateStatus(name, message string, dirt dirtState) tea.Cmd {
+	return func() tea.Msg {
+		return StatusbarUpdate{
+			Name:    name,
+			Message: message,
+			Dirt:    dirt,
+		}
+	}
+}
+
+type StatusbarUpdate struct {
+	Name    string
+	Message string
+	Dirt    dirtState
+}
+
+var clean = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgloss.Color("10"))
+var dirty = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgloss.Color("9"))
+
+func NewStatusbar(filename string) Statusbar {
+	return Statusbar{
+		file: filename,
+	}
+}
+
+type Statusbar struct {
+	file    string
+	name    string
+	message string
+	width   int
+	dirty   bool
+}
+
+func (sb Statusbar) Init() tea.Cmd {
+	return nil
+}
+
+func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "q":
+			if !sb.dirty {
+				return sb, tea.Quit
+			}
+			sb.message = "Save first, or Cltr+C to insist"
+		default:
+			sb.message = fmt.Sprintf("%q", msg.String())
+		}
+	case tea.WindowSizeMsg:
+		sb.width = msg.Width
+	case StatusbarUpdate:
+		sb.name = msg.Name
+		sb.message = msg.Message
+		if msg.Dirt != DirtStateUnchanged {
+			sb.dirty = (msg.Dirt == DirtStateDirty)
+		}
+	}
+	return sb, nil
+}
+
+func (sb Statusbar) View() string {
+	var name string
+	if name != "" {
+		if sb.dirty {
+			name = dirty.Render(sb.name)
+		} else {
+			name = clean.Render(sb.name)
+		}
+		return fmt.Sprintf("%s: %s → %s", sb.file, name, sb.message)
+	}
+	return fmt.Sprintf("%s → %s", sb.file, sb.message)
+}
