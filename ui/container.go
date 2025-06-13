@@ -13,13 +13,16 @@ const (
 	UIStateHelping uiState = iota
 	UIStateListing
 	UIStateEditing
+	UIStateRenaming
+	UIStateDeleting
 )
 
 type UI struct {
+	name      string
 	state     uiState
 	help      tea.Model
-	listing   tea.Model
-	editor    tea.Model
+	list      tea.Model
+	edit      tea.Model
 	rename    tea.Model
 	delete    tea.Model
 	statusbar tea.Model
@@ -28,10 +31,11 @@ type UI struct {
 
 func New(name string, data storage.Storage) tea.Model {
 	ui := UI{
+		name:      name,
 		state:     UIStateHelping,
 		help:      NewHelpScreen(),
-		listing:   Placeholder{},
-		editor:    Placeholder{},
+		list:      Placeholder{},
+		edit:      Placeholder{},
 		rename:    Placeholder{},
 		delete:    Placeholder{},
 		statusbar: NewStatusbar(name),
@@ -39,6 +43,18 @@ func New(name string, data storage.Storage) tea.Model {
 	}
 
 	return ui
+}
+
+func SetUiState(newState uiState) tea.Cmd {
+	return func() tea.Msg {
+		return UIStateUpdate{
+			SetState: newState,
+		}
+	}
+}
+
+type UIStateUpdate struct {
+	SetState uiState
 }
 
 func (ui UI) Init() tea.Cmd {
@@ -53,12 +69,12 @@ func (ui UI) Distribute(msg tea.Msg) (tea.Model, tea.Cmd) {
 	ui.help = helpModel
 	commands = append(commands, helpCmd)
 
-	listModel, listCmd := ui.listing.Update(msg)
-	ui.listing = listModel
+	listModel, listCmd := ui.list.Update(msg)
+	ui.list = listModel
 	commands = append(commands, listCmd)
 
-	editModel, editCmd := ui.editor.Update(msg)
-	ui.editor = editModel
+	editModel, editCmd := ui.edit.Update(msg)
+	ui.edit = editModel
 	commands = append(commands, editCmd)
 
 	renameModel, renameCmd := ui.rename.Update(msg)
@@ -85,19 +101,31 @@ func (ui UI) ToCurrent(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, helpCmd
 		}
 	case UIStateListing:
-		listModel, listCmd := ui.listing.Update(msg)
-		ui.listing = listModel
+		listModel, listCmd := ui.list.Update(msg)
+		ui.list = listModel
 		if listCmd != nil {
 			return ui, listCmd
 		}
 	case UIStateEditing:
-		editModel, editCmd := ui.editor.Update(msg)
-		ui.editor = editModel
+		editModel, editCmd := ui.edit.Update(msg)
+		ui.edit = editModel
 		if editCmd != nil {
 			return ui, editCmd
 		}
+	case UIStateRenaming:
+		renameModel, renameCmd := ui.rename.Update(msg)
+		ui.rename = renameModel
+		if renameCmd != nil {
+			return ui, renameCmd
+		}
+	case UIStateDeleting:
+		deleteModel, deleteCmd := ui.delete.Update(msg)
+		ui.delete = deleteModel
+		if deleteCmd != nil {
+			return ui, deleteCmd
+		}
 	default:
-		return ui, UpdateStatus("", fmt.Sprintf("INVALID STATE %d", ui.state), DirtStateUnchanged)
+		return ui, UpdateStatus(ui.name, fmt.Sprintf("INVALID STATE %d", ui.state), DirtStateUnchanged)
 	}
 
 	statusModel, statusCmd := ui.statusbar.Update(msg)
@@ -116,6 +144,9 @@ func (ui UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			return ui.ToCurrent(msg)
 		}
+	case UIStateUpdate:
+		ui.state = msg.SetState
+		return ui, nil
 	default:
 		return ui.ToCurrent(msg)
 	}
@@ -125,9 +156,9 @@ func (ui UI) View() string {
 	var s string
 	switch ui.state {
 	case UIStateListing:
-		s = ui.listing.View()
+		s = ui.list.View()
 	case UIStateEditing:
-		s = ui.editor.View()
+		s = ui.edit.View()
 	default:
 		s = ui.help.View()
 	}
