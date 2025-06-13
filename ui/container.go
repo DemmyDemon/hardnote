@@ -34,10 +34,10 @@ func New(name string, data storage.Storage) tea.Model {
 		name:      name,
 		state:     UIStateHelping,
 		help:      NewHelpScreen(),
-		list:      Placeholder{},
+		list:      NewListScreen(data),
 		edit:      Placeholder{},
-		rename:    Placeholder{},
-		delete:    Placeholder{},
+		rename:    NewRenameScreen(data),
+		delete:    NewDeleteScreen(data),
 		statusbar: NewStatusbar(name),
 		data:      data,
 	}
@@ -47,13 +47,13 @@ func New(name string, data storage.Storage) tea.Model {
 
 func SetUiState(newState uiState) tea.Cmd {
 	return func() tea.Msg {
-		return UIStateUpdate{
+		return UIStateUpdateMsg{
 			SetState: newState,
 		}
 	}
 }
 
-type UIStateUpdate struct {
+type UIStateUpdateMsg struct {
 	SetState uiState
 }
 
@@ -144,9 +144,17 @@ func (ui UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		default:
 			return ui.ToCurrent(msg)
 		}
-	case UIStateUpdate:
+	case UIStateUpdateMsg:
 		ui.state = msg.SetState
 		return ui, nil
+	case RenameRequestMsg:
+		ui.state = UIStateRenaming
+		return ui.ToCurrent(msg)
+	case DeleteRequestMsg:
+		ui.state = UIStateDeleting
+		return ui.ToCurrent(msg)
+	case IndexUpdateMsg:
+		return ui.Distribute(msg)
 	default:
 		return ui.ToCurrent(msg)
 	}
@@ -159,6 +167,10 @@ func (ui UI) View() string {
 		s = ui.list.View()
 	case UIStateEditing:
 		s = ui.edit.View()
+	case UIStateRenaming:
+		s = ui.rename.View()
+	case UIStateDeleting:
+		s = ui.delete.View()
 	default:
 		s = ui.help.View()
 	}

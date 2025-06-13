@@ -27,6 +27,7 @@ var helpText = []string{
 	"    enter     loads the selected entry into the editor",
 	"    r         renames the selected entry",
 	"    n         creates a new entry",
+	"    d         deletes the selected entry",
 	"",
 	"Editor keys:",
 	"  ctrl+s  saves the current note",

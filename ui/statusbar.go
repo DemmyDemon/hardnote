@@ -17,7 +17,7 @@ const (
 
 func UpdateStatus(name, message string, dirt dirtState) tea.Cmd {
 	return func() tea.Msg {
-		return StatusbarUpdate{
+		return StatusbarUpdateMsg{
 			Name:    name,
 			Message: message,
 			Dirt:    dirt,
@@ -25,7 +25,7 @@ func UpdateStatus(name, message string, dirt dirtState) tea.Cmd {
 	}
 }
 
-type StatusbarUpdate struct {
+type StatusbarUpdateMsg struct {
 	Name    string
 	Message string
 	Dirt    dirtState
@@ -36,8 +36,8 @@ var dirty = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgl
 
 func NewStatusbar(filename string) Statusbar {
 	return Statusbar{
-		file:    filename,
-		message: "Ready!",
+		file: filename,
+		// message: "Ready!",
 	}
 }
 
@@ -83,7 +83,7 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case tea.WindowSizeMsg:
 		sb.width = msg.Width
-	case StatusbarUpdate:
+	case StatusbarUpdateMsg:
 		sb.name = msg.Name
 		sb.message = msg.Message
 		if msg.Dirt != DirtStateUnchanged {
