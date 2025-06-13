@@ -36,7 +36,8 @@ var dirty = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgl
 
 func NewStatusbar(filename string) Statusbar {
 	return Statusbar{
-		file: filename,
+		file:    filename,
+		message: "Ready!",
 	}
 }
 
@@ -48,6 +49,10 @@ type Statusbar struct {
 	dirty   bool
 }
 
+func (sb Statusbar) IsDirty() bool {
+	return sb.dirty
+}
+
 func (sb Statusbar) Init() tea.Cmd {
 	return nil
 }
@@ -56,11 +61,23 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "q":
+		case "ctrl+q":
 			if !sb.dirty {
 				return sb, tea.Quit
 			}
-			sb.message = "Save first, or Cltr+C to insist"
+			sb.message = "ctrl+s to save before quitting, or ctrl+c to insist"
+		case "ctrl+h":
+			if !sb.dirty {
+				sb.message = "Opening help"
+				return sb, SetUiState(UIStateHelping)
+			}
+			sb.message = "ctrl+s to save before viewing help, ctrl+u to discard changes"
+		case "ctrl+l":
+			if !sb.dirty {
+				sb.message = "Listing notes"
+				return sb, SetUiState(UIStateListing)
+			}
+			sb.message = "ctrl+s to save before viewing list, ctrl+u to discard changes"
 		default:
 			sb.message = fmt.Sprintf("%q", msg.String())
 		}
