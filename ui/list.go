@@ -124,6 +124,8 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (ls ListScreen) View() string {
+	// TODO: What happen when the list is longer than the screen?
+	// I'll have to make some sort of offset depending on where the cursor is
 	screen := ""
 	if len(ls.index) == 0 {
 		screen = listStyleSelected.Render("There are no entries. Press n to create one.")
