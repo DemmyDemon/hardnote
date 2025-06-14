@@ -195,6 +195,7 @@ func (ls ListScreen) View() string {
 	}
 	screen = strings.TrimSuffix(screen, "\n")
 	screen += strings.Repeat("\n │", max(0, ls.height-len(ls.index)))
+	screen = strings.TrimPrefix(screen, "\n")
 	return fmt.Sprintf("%s\n%s", ls.headerView(), screen)
 }
 
