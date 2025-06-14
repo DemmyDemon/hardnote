@@ -10,12 +10,10 @@ import (
 )
 
 var listStyleSelected = lipgloss.NewStyle().
-	MarginLeft(2).
 	Background(lipgloss.Color("15")).
 	Foreground(lipgloss.Color("0")).
 	Bold(true)
 var listStyleUnselected = lipgloss.NewStyle().
-	MarginLeft(2).
 	Background(lipgloss.Color("0")).
 	Foreground(lipgloss.Color("15"))
 
@@ -84,22 +82,22 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ls.moveCursorUp(), nil
 		case "down":
 			return ls.moveCursorDown(), nil
-		case "shift+up":
+		case "alt+up":
 			idx, err := ls.store.MoveUp(ls.index[ls.cursor].Id)
 			if err != nil {
-				return ls, UpdateStatus("", err.Error(), DirtStateUnchanged)
+				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			return ls.moveCursorUp(), UpdateIndex(idx)
-		case "shift+down":
+		case "alt+down":
 			idx, err := ls.store.MoveDown(ls.index[ls.cursor].Id)
 			if err != nil {
-				return ls, UpdateStatus("", err.Error(), DirtStateUnchanged)
+				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			return ls.moveCursorDown(), UpdateIndex(idx)
 		case "n":
 			entry, idx, err := ls.store.Create("", "")
 			if err != nil {
-				return ls, UpdateStatus("", err.Error(), DirtStateUnchanged)
+				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			ls.cursor = len(idx) - 1
 			return ls, tea.Batch(UpdateIndex(idx), RequestRename(storage.EntryMeta{Id: entry.Id}))
@@ -107,6 +105,10 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ls, RequestRename(ls.index[ls.cursor])
 		case "d":
 			return ls, RequestDelete(ls.index[ls.cursor])
+		case "enter":
+			if len(ls.index) > 0 && ls.cursor <= len(ls.index)-1 {
+				return ls, RequestEdit(ls.index[ls.cursor])
+			}
 		}
 	case IndexUpdateMsg:
 		ls.index = msg.Index
@@ -117,7 +119,7 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			ls.cursor = 0
 		}
 	case tea.WindowSizeMsg:
-		ls.height = msg.Height - 2 // Leave room for header and statusbar
+		ls.height = msg.Height - 3 // Leave room for header and statusbar
 		ls.width = msg.Width
 	}
 	return ls, nil
@@ -127,26 +129,29 @@ func (ls ListScreen) View() string {
 	// TODO: What happen when the list is longer than the screen?
 	// I'll have to make some sort of offset depending on where the cursor is
 	screen := ""
-	if len(ls.index) == 0 {
-		screen = listStyleSelected.Render("There are no entries. Press n to create one.")
-	}
+
 	for i, entryMeta := range ls.index {
+		screen += "  │ "
 		name := entryMeta.Name
 		if name == "" {
 			name = "Untitled"
 		}
 		if i == ls.cursor {
-			screen += listStyleSelected.Render(name) + "\n"
+			screen += listStyleSelected.Render(name)
 		} else {
-			screen += listStyleUnselected.Render(name) + "\n"
+			screen += listStyleUnselected.Render(name)
 		}
+		screen += "\n"
 	}
-	screen += strings.Repeat("\n", ls.height-len(ls.index))
+	screen += strings.Repeat("\n", max(0, ls.height-len(ls.index)))
 	return fmt.Sprintf("%s\n%s", ls.headerView(), screen)
 }
 
 func (ls ListScreen) headerView() string {
-	title := "──┤ Select an entry to edit ├"
+	title := "──┤ ↑↓ Select an entry to edit   ↲ Open in editor ├"
+	if len(ls.index) == 0 {
+		title = "──┤ Press n to create a new entry ├"
+	}
 	line := strings.Repeat("─", max(0, ls.width-lipgloss.Width(title)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
+	return title + line
 }

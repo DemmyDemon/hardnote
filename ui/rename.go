@@ -56,7 +56,7 @@ func (rs RenameScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "enter":
 			idx, err := rs.store.Rename(rs.entryMeta.Id, rs.input.Value())
 			if err != nil {
-				return rs, UpdateStatus("", err.Error(), DirtStateUnchanged)
+				return rs, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			return rs, tea.Batch(UpdateIndex(idx), SetUiState(UIStateListing))
 		}

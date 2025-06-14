@@ -15,10 +15,9 @@ const (
 	DirtStateClean
 )
 
-func UpdateStatus(name, message string, dirt dirtState) tea.Cmd {
+func UpdateStatus(message string, dirt dirtState) tea.Cmd {
 	return func() tea.Msg {
 		return StatusbarUpdateMsg{
-			Name:    name,
 			Message: message,
 			Dirt:    dirt,
 		}
@@ -26,18 +25,25 @@ func UpdateStatus(name, message string, dirt dirtState) tea.Cmd {
 }
 
 type StatusbarUpdateMsg struct {
-	Name    string
 	Message string
 	Dirt    dirtState
 }
+
+func UpdateStatusName(name string) tea.Cmd {
+	return func() tea.Msg {
+		return StatusNameUpdateMsg(name)
+	}
+}
+
+type StatusNameUpdateMsg string
 
 var clean = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgloss.Color("10"))
 var dirty = lipgloss.NewStyle().Background(lipgloss.Color("0")).Foreground(lipgloss.Color("9"))
 
 func NewStatusbar(filename string) Statusbar {
 	return Statusbar{
-		file: filename,
-		// message: "Ready!",
+		file:    filename,
+		message: "Press ctrl+h for the help screen",
 	}
 }
 
@@ -84,17 +90,18 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		sb.width = msg.Width
 	case StatusbarUpdateMsg:
-		sb.name = msg.Name
 		sb.message = msg.Message
 		if msg.Dirt != DirtStateUnchanged {
 			sb.dirty = (msg.Dirt == DirtStateDirty)
 		}
+	case StatusNameUpdateMsg:
+		sb.name = string(msg)
 	}
 	return sb, nil
 }
 
 func (sb Statusbar) View() string {
-	var name string
+	var name = sb.name
 	if name != "" {
 		if sb.dirty {
 			name = dirty.Render(sb.name)

@@ -10,8 +10,6 @@ import (
 )
 
 var helpText = []string{
-	"If you are seeing this, the password was correct.",
-	"",
 	"Use ↑ and ↓ to scroll the help text if it is too long for your  terminal.",
 	"Press clrl+l to open the note listing.",
 	"",
@@ -22,8 +20,8 @@ var helpText = []string{
 	"",
 	"Listing keys:",
 	"    ↑ and ↓   navigates the list.",
-	"    Shift+↑   moves entry up",
-	"    Shift+↓   moves entry down",
+	"    alt+↑   moves entry up",
+	"    alt+↓   moves entry down",
 	"    enter     loads the selected entry into the editor",
 	"    r         renames the selected entry",
 	"    n         creates a new entry",
@@ -31,10 +29,9 @@ var helpText = []string{
 	"",
 	"Editor keys:",
 	"  ctrl+s  saves the current note",
+	"  ctrl+d  saves the current note, and opens the listing",
 	"  ctrl+u  discards the changes to the current note",
 	"  ctrl+l  opens the listing, if the current note is saved",
-	"",
-	"Additional keybinds as I make them up, I guess.",
 }
 
 func NewHelpScreen() HelpScreen {

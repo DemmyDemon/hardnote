@@ -32,10 +32,10 @@ type UI struct {
 func New(name string, data storage.Storage) tea.Model {
 	ui := UI{
 		name:      name,
-		state:     UIStateHelping,
+		state:     UIStateListing,
 		help:      NewHelpScreen(),
 		list:      NewListScreen(data),
-		edit:      Placeholder{},
+		edit:      NewEditScreen(data),
 		rename:    NewRenameScreen(data),
 		delete:    NewDeleteScreen(data),
 		statusbar: NewStatusbar(name),
@@ -125,7 +125,7 @@ func (ui UI) ToCurrent(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return ui, deleteCmd
 		}
 	default:
-		return ui, UpdateStatus(ui.name, fmt.Sprintf("INVALID STATE %d", ui.state), DirtStateUnchanged)
+		return ui, UpdateStatus(fmt.Sprintf("INVALID STATE %d", ui.state), DirtStateUnchanged)
 	}
 
 	statusModel, statusCmd := ui.statusbar.Update(msg)
@@ -141,23 +141,22 @@ func (ui UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch msg.String() {
 		case "ctrl+c":
 			return ui, tea.Quit
-		default:
-			return ui.ToCurrent(msg)
 		}
 	case UIStateUpdateMsg:
 		ui.state = msg.SetState
-		return ui, nil
+		return ui, UpdateStatusName("")
 	case RenameRequestMsg:
 		ui.state = UIStateRenaming
-		return ui.ToCurrent(msg)
 	case DeleteRequestMsg:
 		ui.state = UIStateDeleting
-		return ui.ToCurrent(msg)
+	case EditRequestMsg:
+		ui.state = UIStateEditing
 	case IndexUpdateMsg:
-		return ui.Distribute(msg)
-	default:
-		return ui.ToCurrent(msg)
+		model, cmd := ui.list.Update(msg)
+		ui.list = model
+		return ui, cmd
 	}
+	return ui.ToCurrent(msg)
 }
 
 func (ui UI) View() string {

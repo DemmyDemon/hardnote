@@ -47,7 +47,7 @@ func (ds DeleteScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case "ctrl+y":
 			idx, err := ds.store.Delete(ds.entryMeta.Id)
 			if err != nil {
-				return ds, UpdateStatus("", err.Error(), DirtStateUnchanged)
+				return ds, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			return ds, tea.Batch(UpdateIndex(idx), SetUiState(UIStateListing))
 		}
