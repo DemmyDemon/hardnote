@@ -113,6 +113,9 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			ls.cursor = len(idx) - 1
+			if ls.cursor >= ls.height {
+				ls.offset = (ls.cursor - ls.height) + 1
+			}
 			return ls, tea.Batch(UpdateIndex(idx), RequestRename(storage.EntryMeta{Id: entry.Id}))
 		case "r":
 			return ls, RequestRename(ls.index[ls.cursor])
@@ -130,6 +133,9 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 		if ls.cursor < 0 {
 			ls.cursor = 0
+		}
+		if ls.offset > ls.cursor-ls.height {
+			ls.offset = (ls.cursor - ls.height) + 1
 		}
 	case tea.WindowSizeMsg:
 		ls.height = msg.Height - 2 // Leave room for header and statusbar
@@ -158,7 +164,17 @@ func (ls ListScreen) View() string {
 			break
 		}
 
-		entryMeta := ls.index[i+ls.offset]
+		idx := i + ls.offset
+		if idx < 0 {
+			ls.offset = 0
+			idx = 0
+		}
+		if idx >= len(ls.index) {
+			idx = len(ls.index) - 1
+			ls.offset = idx - ls.height
+		}
+
+		entryMeta := ls.index[idx]
 		if i == 0 && ls.offset != 0 {
 			screen += "↑│"
 		} else if i == ls.height-1 && i+ls.offset < len(ls.index)-1 {
