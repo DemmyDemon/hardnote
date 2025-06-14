@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
@@ -101,14 +102,17 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (sb Statusbar) View() string {
-	var name = sb.name
-	if name != "" {
+
+	bar := fmt.Sprintf("─┤ %ss → %s ├", sb.file, sb.message)
+	if sb.name != "" {
+		var name string
 		if sb.dirty {
 			name = dirty.Render(sb.name)
 		} else {
 			name = clean.Render(sb.name)
 		}
-		return fmt.Sprintf("%s: %s → %s", sb.file, name, sb.message)
+		bar = fmt.Sprintf("─┤ %s: %s → %s ├", sb.file, name, sb.message)
 	}
-	return fmt.Sprintf("%s → %s", sb.file, sb.message)
+	line := strings.Repeat("─", max(0, sb.width-lipgloss.Width(bar)))
+	return bar + line
 }
