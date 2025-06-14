@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
 
-var helpText = []string{
-	"Use ↑ and ↓ to scroll the help text if it is too long for your  terminal.",
+const defaultHelpTitle = "HardNote Help"
+
+var defaultHelpText = []string{
+	"Use ↑ and ↓ to scroll the help text if it is too long for your terminal.",
 	"Press clrl+l to open the note listing.",
 	"",
 	"Global keys:",
@@ -35,43 +36,83 @@ var helpText = []string{
 }
 
 func NewHelpScreen() HelpScreen {
-	return HelpScreen{}
+	return HelpScreen{
+		title: defaultHelpTitle,
+		lines: defaultHelpText,
+	}
 }
 
 type HelpScreen struct {
-	height   int
-	width    int
-	viewport viewport.Model
+	height int
+	width  int
+	offset int
+	title  string
+	lines  []string
 }
 
 func (h HelpScreen) Init() tea.Cmd {
-	h.viewport = viewport.New(70, 20)
-	h.viewport.SetContent(strings.Join(helpText, "\n"))
 	return nil
+}
+
+func (h *HelpScreen) moveUp() {
+	h.offset--
+	if h.offset < 0 {
+		h.offset = 0
+	}
+}
+func (h *HelpScreen) moveDown() {
+	h.offset++
+	h.offset = min(h.offset, (len(h.lines))-h.height)
+	if h.offset < 0 {
+		h.offset = 0
+	}
 }
 
 func (h HelpScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		h.height = msg.Height - 1        // Leave room for status bar
-		h.viewport.Height = h.height - 1 // Leave room for the header
-
+		h.height = msg.Height - 2 // Leave room for status bar and header
+		if h.offset >= len(h.lines)-h.height {
+			h.offset = len(h.lines) - h.height
+			if h.offset < 0 {
+				h.offset = 0
+			}
+		}
 		h.width = msg.Width
-		h.viewport.Width = msg.Width
-		h.viewport.YPosition = 1 // So it's not behind the header, I guess? Cargo cult.
-		h.viewport.SetContent(strings.Join(helpText, "\n"))
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "up":
+			h.moveUp()
+		case "down":
+			h.moveDown()
+		}
 	}
-
-	viewport, cmd := h.viewport.Update(msg)
-	h.viewport = viewport
-	return h, cmd
+	return h, nil
 }
 
 func (h HelpScreen) View() string {
-	return fmt.Sprintf("%s\n%s", h.headerView(), h.viewport.View())
+	var sb strings.Builder
+	sb.WriteString(h.headerView())
+	sb.WriteRune('\n')
+	for i := 0; i < h.height; i++ {
+		if i+h.offset >= len(h.lines) {
+			break
+		}
+		if i == 0 && h.offset != 0 {
+			sb.WriteString("↑│ ")
+		} else if i == h.height-1 && h.offset < (len(h.lines)-h.height) {
+			sb.WriteString("↓│ ")
+		} else {
+			sb.WriteString(" │ ")
+		}
+		sb.WriteString(h.lines[i+h.offset])
+
+		sb.WriteRune('\n')
+	}
+	return strings.TrimSuffix(sb.String(), "\n") + strings.Repeat("\n │", max(0, h.height-len(h.lines)))
 }
 func (h HelpScreen) headerView() string {
-	title := "──┤ HardNote Help ├"
+	title := fmt.Sprintf("─┤ %s ├", h.title)
 	line := strings.Repeat("─", max(0, h.width-lipgloss.Width(title)))
-	return lipgloss.JoinHorizontal(lipgloss.Center, title, line)
+	return title + line
 }
