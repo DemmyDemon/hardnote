@@ -97,6 +97,11 @@ func (es EditScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			es.text.SetValue(es.entry.Text)
 			es.cursorToBeginningFoulSmellingHack()
 			return es, UpdateStatus("Reverted!", DirtStateClean)
+		case "esc":
+			if es.text.Value() == es.entry.Text {
+				return es, tea.Batch(SetUiState(UIStateListing), UpdateStatus("Escape successful!", DirtStateClean))
+			}
+			return es, UpdateStatus("You can't escape with unsaved changes!", DirtStateDirty)
 		default:
 			passCmd = UpdateStatus(fmt.Sprintf("(editor) %q", msg.String()), DirtStateDirty)
 		}
