@@ -2,10 +2,12 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/DemmyDemon/hardnote/storage"
 	"github.com/charmbracelet/bubbles/textarea"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type EditRequestMsg struct {
@@ -22,7 +24,10 @@ func RequestEdit(entryMeta storage.EntryMeta) tea.Cmd {
 
 func NewEditScreen(data storage.Storage) EditScreen {
 	ta := textarea.New()
-	ta.Prompt = ""
+	ta.Prompt = " │ "
+	ta.ShowLineNumbers = false
+	ta.EndOfBufferCharacter = '•'
+	ta.FocusedStyle.EndOfBuffer = lipgloss.NewStyle().Foreground(lipgloss.Color("12"))
 	ta.Focus()
 	return EditScreen{
 		text:  ta,
@@ -96,7 +101,7 @@ func (es EditScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			passCmd = UpdateStatus(fmt.Sprintf("(editor) %q", msg.String()), DirtStateDirty)
 		}
 	case tea.WindowSizeMsg:
-		es.height = msg.Height - 1 // Leave room for status bar
+		es.height = msg.Height - 2 // Leave room for status bar and header
 		es.text.SetHeight(es.height)
 
 		es.width = msg.Width
@@ -108,5 +113,11 @@ func (es EditScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (es EditScreen) View() string {
-	return es.text.View()
+	return fmt.Sprintf("%s\n%s", es.viewHeader(), es.text.View())
+}
+func (es EditScreen) viewHeader() string {
+	info := es.text.LineInfo()
+	header := fmt.Sprintf("─┤ %d:%d ├", es.text.Line()+1, info.CharOffset+info.StartColumn)
+	header += strings.Repeat("─", max(0, es.width-lipgloss.Width(header)))
+	return header
 }
