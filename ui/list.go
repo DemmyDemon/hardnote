@@ -1,13 +1,19 @@
 package ui
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/DemmyDemon/hardnote/storage"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 )
+
+var nonWordChars = regexp.MustCompile("[^\\w]+")
 
 var listStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
@@ -173,6 +179,33 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if len(ls.index) > 0 && ls.cursor <= len(ls.index)-1 {
 				return ls, RequestEdit(ls.index[ls.cursor])
 			}
+		case "ctrl+e":
+			entryMeta := ls.index[ls.cursor]
+			return ls, Ask(
+				"Where do you want to export?",
+				filename(entryMeta.Name),
+				"Enter a filename",
+				func(filename string) tea.Cmd {
+					_, err := os.Stat(filename)
+					if err != nil && !errors.Is(err, os.ErrNotExist) {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					if err == nil {
+						return UpdateStatus("File exists. Refusing to overwrite.", DirtStateUnchanged)
+					}
+					entry, err := ls.store.Read(entryMeta.Id)
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					if err := os.WriteFile(filename, []byte(entry.Text), 0600); err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					return tea.Batch(
+						UpdateStatus("Export successful!", DirtStateUnchanged),
+						SetUiState(UIStateListing),
+					)
+				},
+			)
 		}
 	case IndexUpdateMsg:
 		ls.index = msg.Index
@@ -253,4 +286,17 @@ func (ls ListScreen) headerView() string {
 	}
 	line := strings.Repeat("─", max(0, ls.width-lipgloss.Width(title)))
 	return title + line
+}
+
+func filename(original string) string {
+	filename := strings.ToLower(original)
+	filename = nonWordChars.ReplaceAllString(filename, "_")
+	filename = strings.Trim(filename, "_")
+	filename += ".txt"
+	wd, err := os.Getwd()
+	if err != nil { // ... what would that error even be?!
+		return filename
+	}
+	filename = filepath.Join(wd, filename)
+	return filename
 }
