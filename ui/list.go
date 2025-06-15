@@ -13,6 +13,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+const readSizeLimit = 3 * 1024 * 1024 // 3MiB
+
 var nonWordChars = regexp.MustCompile("[^\\w]+")
 
 var listStyleSelected = lipgloss.NewStyle().
@@ -203,6 +205,41 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					return tea.Batch(
 						UpdateStatus("Export successful!", DirtStateUnchanged),
 						SetUiState(UIStateListing),
+					)
+				},
+			)
+		case "ctrl+r":
+			wd, err := os.Getwd()
+			if err != nil {
+				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
+			}
+			return ls, Ask(
+				"What file do you want to read?",
+				wd+string(os.PathSeparator),
+				"Enter a filename",
+				func(filename string) tea.Cmd {
+					stat, err := os.Stat(filename)
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					if stat.IsDir() {
+						return UpdateStatus("Can't read a whole directory.", DirtStateUnchanged)
+					}
+					if stat.Size() > readSizeLimit {
+						return UpdateStatus("No. HardNote does not do well with files that size.", DirtStateUnchanged)
+					}
+					data, err := os.ReadFile(filename)
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					_, idx, err := ls.store.Create(filepath.Base(filename), string(data))
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					return tea.Batch(
+						UpdateIndex(idx),
+						SetUiState(UIStateListing),
+						UpdateStatus("Read successful", DirtStateUnchanged),
 					)
 				},
 			)

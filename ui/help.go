@@ -28,6 +28,7 @@ var defaultHelpText = []string{
 	"  n         creates a new entry",
 	"  d         deletes the selected entry",
 	"  ctrl+e    exports a plain text file of the selected note",
+	"  ctrl+r    reads an entry from a plain text file",
 	"  esc       exits HardNote",
 	"",
 	"Editor keys:",
