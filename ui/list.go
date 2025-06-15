@@ -11,10 +11,12 @@ import (
 
 var listStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
-	Foreground(lipgloss.Color("0"))
+	Foreground(lipgloss.Color("0")).
+	PaddingLeft(2).PaddingRight(1)
 var listStyleUnselected = lipgloss.NewStyle().
 	Background(lipgloss.Color("0")).
-	Foreground(lipgloss.Color("15"))
+	Foreground(lipgloss.Color("15")).
+	PaddingLeft(1).PaddingRight(1)
 
 type IndexUpdateMsg struct {
 	Index storage.Index
@@ -87,6 +89,8 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
+		case "esc":
+			return ls, tea.Quit
 		case "up":
 			ls.moveCursorUp()
 			return ls, nil // UpdateStatus(fmt.Sprintf("[up] c:%d o: %d", ls.cursor, ls.offset), DirtStateUnchanged)
@@ -143,7 +147,28 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				},
 			)
 		case "d":
-			return ls, RequestDelete(ls.index[ls.cursor])
+			entryMeta := ls.index[ls.cursor]
+			return ls, PickOne(
+				fmt.Sprintf("Delete %q?", entryMeta.Name),
+				[]string{"No", "Yes, delete for ever!"},
+				func(selected int) tea.Cmd {
+					if selected == 1 {
+						idx, err := ls.store.Delete(entryMeta.Id)
+						if err != nil {
+							UpdateStatus(err.Error(), DirtStateUnchanged)
+						}
+						return tea.Batch(
+							UpdateStatus(fmt.Sprintf("Deleted %s", entryMeta.Name), DirtStateUnchanged),
+							UpdateIndex(idx),
+							SetUiState(UIStateListing),
+						)
+					}
+					return tea.Batch(
+						UpdateStatus("Okay, never mind.", DirtStateUnchanged),
+						SetUiState(UIStateListing),
+					)
+				},
+			)
 		case "enter":
 			if len(ls.index) > 0 && ls.cursor <= len(ls.index)-1 {
 				return ls, RequestEdit(ls.index[ls.cursor])
@@ -199,22 +224,21 @@ func (ls ListScreen) View() string {
 
 		entryMeta := ls.index[idx]
 		if i == 0 && ls.offset != 0 {
-			screen += "↑│"
+			screen += "↑"
 		} else if i == ls.height-1 && i+ls.offset < len(ls.index)-1 {
-			screen += "↓│"
+			screen += "↓"
 		} else {
-			screen += " │"
+			screen += " "
 		}
 		name := entryMeta.Name
 		if name == "" {
 			name = "Untitled"
 		}
 		if i+ls.offset == ls.cursor {
-			screen += listStyleSelected.Render(" " + name + " ")
+			screen += fmt.Sprintf("%s\n", listStyleSelected.Render(name))
 		} else {
-			screen += listStyleUnselected.Render(" " + name + " ")
+			screen += fmt.Sprintf("│%s\n", listStyleUnselected.Render(name))
 		}
-		screen += "\n"
 	}
 	screen = strings.TrimSuffix(screen, "\n")
 	screen += strings.Repeat("\n │", max(0, ls.height-len(ls.index)))
@@ -223,7 +247,7 @@ func (ls ListScreen) View() string {
 }
 
 func (ls ListScreen) headerView() string {
-	title := "─┤ ↑↓ Select an entry to edit   ↲ Open in editor ├"
+	title := "─┤ ↑↓ Select an entry to edit ├"
 	if len(ls.index) == 0 {
 		title = "─┤ Press n to create a new entry ├"
 	}

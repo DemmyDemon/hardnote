@@ -13,8 +13,7 @@ const (
 	UIStateHelping uiState = iota
 	UIStateListing
 	UIStateEditing
-	UIStateRenaming
-	UIStateDeleting
+	UIStatePicking
 	UIStateAsking
 )
 
@@ -24,7 +23,7 @@ type UI struct {
 	help      tea.Model
 	list      tea.Model
 	edit      tea.Model
-	delete    tea.Model
+	pick      tea.Model
 	ask       tea.Model
 	statusbar tea.Model
 	data      storage.Storage
@@ -37,7 +36,7 @@ func New(name string, data storage.Storage) tea.Model {
 		help:      NewHelpScreen(),
 		list:      NewListScreen(data),
 		edit:      NewEditScreen(data),
-		delete:    NewDeleteScreen(data),
+		pick:      NewPickOneScreen(),
 		ask:       NewAskScreen(),
 		statusbar: NewStatusbar(name),
 		data:      data,
@@ -78,9 +77,9 @@ func (ui UI) Distribute(msg tea.Msg) (tea.Model, tea.Cmd) {
 	ui.edit = editModel
 	commands = append(commands, editCmd)
 
-	deleteModel, deleteCmd := ui.delete.Update(msg)
-	ui.delete = deleteModel
-	commands = append(commands, deleteCmd)
+	pickModel, pickCmd := ui.pick.Update(msg)
+	ui.pick = pickModel
+	commands = append(commands, pickCmd)
 
 	askModel, askCmd := ui.ask.Update(msg)
 	ui.ask = askModel
@@ -113,11 +112,11 @@ func (ui UI) ToCurrent(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if editCmd != nil {
 			return ui, editCmd
 		}
-	case UIStateDeleting:
-		deleteModel, deleteCmd := ui.delete.Update(msg)
-		ui.delete = deleteModel
-		if deleteCmd != nil {
-			return ui, deleteCmd
+	case UIStatePicking:
+		pickModel, pickCmd := ui.pick.Update(msg)
+		ui.pick = pickModel
+		if pickCmd != nil {
+			return ui, pickCmd
 		}
 	case UIStateAsking:
 		askModel, askCmd := ui.ask.Update(msg)
@@ -146,8 +145,8 @@ func (ui UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case UIStateUpdateMsg:
 		ui.state = msg.SetState
 		return ui, UpdateStatusName("")
-	case DeleteRequestMsg:
-		ui.state = UIStateDeleting
+	case PickOneRequestMsg:
+		ui.state = UIStatePicking
 	case EditRequestMsg:
 		ui.state = UIStateEditing
 	case AskRequestMsg:
@@ -167,8 +166,8 @@ func (ui UI) View() string {
 		s = ui.list.View()
 	case UIStateEditing:
 		s = ui.edit.View()
-	case UIStateDeleting:
-		s = ui.delete.View()
+	case UIStatePicking:
+		s = ui.pick.View()
 	case UIStateAsking:
 		s = ui.ask.View()
 	default:
