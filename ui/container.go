@@ -58,7 +58,7 @@ type UIStateUpdateMsg struct {
 }
 
 func (ui UI) Init() tea.Cmd {
-	return tea.ClearScreen
+	return tea.Batch(tea.SetWindowTitle("HardNote - " + ui.name))
 }
 
 func (ui UI) Distribute(msg tea.Msg) (tea.Model, tea.Cmd) {

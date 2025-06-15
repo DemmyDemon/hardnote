@@ -8,7 +8,7 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
-const defaultHelpTitle = "HardNote Help"
+const defaultHelpTitle = "Help"
 
 var defaultHelpText = []string{
 	"Use ↑ and ↓ to scroll the help text if it is too long for your terminal.",

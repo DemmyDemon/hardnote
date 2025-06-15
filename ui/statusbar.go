@@ -97,6 +97,14 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 	case StatusNameUpdateMsg:
 		sb.name = string(msg)
+		if sb.name == "" {
+			return sb, tea.SetWindowTitle("HardNote - " + sb.file)
+		}
+		name := sb.name
+		if len(name) >= 20 {
+			name = name[0:20]
+		}
+		return sb, tea.SetWindowTitle(fmt.Sprintf("HardNote - %s:%s", sb.file, name))
 	}
 	return sb, nil
 }
