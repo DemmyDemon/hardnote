@@ -116,9 +116,32 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if ls.cursor >= ls.height {
 				ls.offset = (ls.cursor - ls.height) + 1
 			}
-			return ls, tea.Batch(UpdateIndex(idx), RequestRename(storage.EntryMeta{Id: entry.Id}))
+			return ls, Ask(
+				"What do you want name this entry?",
+				"",
+				"Untitled",
+				func(answer string) tea.Cmd {
+					idx, err := ls.store.Rename(entry.Id, answer)
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					return tea.Batch(UpdateIndex(idx), SetUiState(UIStateListing))
+				},
+			)
 		case "r":
-			return ls, RequestRename(ls.index[ls.cursor])
+			entryMeta := ls.index[ls.cursor]
+			return ls, Ask(
+				"What do you want to rename it to?",
+				entryMeta.Name,
+				"Untitled",
+				func(answer string) tea.Cmd {
+					idx, err := ls.store.Rename(entryMeta.Id, answer)
+					if err != nil {
+						return UpdateStatus(err.Error(), DirtStateUnchanged)
+					}
+					return tea.Batch(UpdateIndex(idx), SetUiState(UIStateListing))
+				},
+			)
 		case "d":
 			return ls, RequestDelete(ls.index[ls.cursor])
 		case "enter":

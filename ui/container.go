@@ -15,6 +15,7 @@ const (
 	UIStateEditing
 	UIStateRenaming
 	UIStateDeleting
+	UIStateAsking
 )
 
 type UI struct {
@@ -23,8 +24,8 @@ type UI struct {
 	help      tea.Model
 	list      tea.Model
 	edit      tea.Model
-	rename    tea.Model
 	delete    tea.Model
+	ask       tea.Model
 	statusbar tea.Model
 	data      storage.Storage
 }
@@ -36,8 +37,8 @@ func New(name string, data storage.Storage) tea.Model {
 		help:      NewHelpScreen(),
 		list:      NewListScreen(data),
 		edit:      NewEditScreen(data),
-		rename:    NewRenameScreen(data),
 		delete:    NewDeleteScreen(data),
+		ask:       NewAskScreen(),
 		statusbar: NewStatusbar(name),
 		data:      data,
 	}
@@ -63,7 +64,7 @@ func (ui UI) Init() tea.Cmd {
 
 func (ui UI) Distribute(msg tea.Msg) (tea.Model, tea.Cmd) {
 
-	commands := make([]tea.Cmd, 0, 6) // Initialize capacity to the number of models, including status bar
+	commands := make([]tea.Cmd, 0, 7) // Initialize capacity to the number of models, including status bar
 
 	helpModel, helpCmd := ui.help.Update(msg)
 	ui.help = helpModel
@@ -77,13 +78,13 @@ func (ui UI) Distribute(msg tea.Msg) (tea.Model, tea.Cmd) {
 	ui.edit = editModel
 	commands = append(commands, editCmd)
 
-	renameModel, renameCmd := ui.rename.Update(msg)
-	ui.rename = renameModel
-	commands = append(commands, renameCmd)
-
 	deleteModel, deleteCmd := ui.delete.Update(msg)
 	ui.delete = deleteModel
 	commands = append(commands, deleteCmd)
+
+	askModel, askCmd := ui.ask.Update(msg)
+	ui.ask = askModel
+	commands = append(commands, askCmd)
 
 	statusModel, statusCmd := ui.statusbar.Update(msg)
 	ui.statusbar = statusModel
@@ -112,17 +113,17 @@ func (ui UI) ToCurrent(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if editCmd != nil {
 			return ui, editCmd
 		}
-	case UIStateRenaming:
-		renameModel, renameCmd := ui.rename.Update(msg)
-		ui.rename = renameModel
-		if renameCmd != nil {
-			return ui, renameCmd
-		}
 	case UIStateDeleting:
 		deleteModel, deleteCmd := ui.delete.Update(msg)
 		ui.delete = deleteModel
 		if deleteCmd != nil {
 			return ui, deleteCmd
+		}
+	case UIStateAsking:
+		askModel, askCmd := ui.ask.Update(msg)
+		ui.ask = askModel
+		if askCmd != nil {
+			return ui, askCmd
 		}
 	default:
 		return ui, UpdateStatus(fmt.Sprintf("INVALID STATE %d", ui.state), DirtStateUnchanged)
@@ -145,12 +146,12 @@ func (ui UI) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case UIStateUpdateMsg:
 		ui.state = msg.SetState
 		return ui, UpdateStatusName("")
-	case RenameRequestMsg:
-		ui.state = UIStateRenaming
 	case DeleteRequestMsg:
 		ui.state = UIStateDeleting
 	case EditRequestMsg:
 		ui.state = UIStateEditing
+	case AskRequestMsg:
+		ui.state = UIStateAsking
 	case IndexUpdateMsg:
 		model, cmd := ui.list.Update(msg)
 		ui.list = model
@@ -166,10 +167,10 @@ func (ui UI) View() string {
 		s = ui.list.View()
 	case UIStateEditing:
 		s = ui.edit.View()
-	case UIStateRenaming:
-		s = ui.rename.View()
 	case UIStateDeleting:
 		s = ui.delete.View()
+	case UIStateAsking:
+		s = ui.ask.View()
 	default:
 		s = ui.help.View()
 	}
