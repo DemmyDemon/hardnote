@@ -53,7 +53,6 @@ type ListScreen struct {
 	height int
 	width  int
 	cursor int
-	offset int
 	store  storage.Storage
 	index  storage.Index
 }
@@ -70,9 +69,6 @@ func (ls *ListScreen) moveCursorUp() {
 	if ls.cursor < 0 {
 		ls.cursor = 0
 	}
-	if ls.cursor < ls.offset {
-		ls.offset = ls.cursor
-	}
 	return
 }
 
@@ -83,12 +79,6 @@ func (ls *ListScreen) moveCursorDown() {
 	ls.cursor++
 	if ls.cursor >= len(ls.index) {
 		ls.cursor = len(ls.index) - 1
-	}
-	if ls.cursor >= ls.height-ls.offset {
-		ls.offset++
-		if ls.offset >= len(ls.index)-ls.height {
-			ls.offset = len(ls.index) - ls.height
-		}
 	}
 	return
 }
@@ -125,9 +115,6 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return ls, UpdateStatus(err.Error(), DirtStateUnchanged)
 			}
 			ls.cursor = len(idx) - 1
-			if ls.cursor >= ls.height {
-				ls.offset = (ls.cursor - ls.height) + 1
-			}
 			return ls, Ask(
 				"What do you want name this entry?",
 				"",
@@ -252,22 +239,9 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if ls.cursor < 0 {
 			ls.cursor = 0
 		}
-		if ls.offset > ls.cursor-ls.height {
-			ls.offset = (ls.cursor - ls.height) + 1
-		}
 	case tea.WindowSizeMsg:
 		ls.height = msg.Height - 2 // Leave room for header and statusbar
-		if ls.height >= len(ls.index) {
-			ls.offset = 0
-		}
-		if ls.height <= ls.cursor {
-			ls.offset = ls.cursor
-		}
-		if ls.cursor >= ls.height-ls.offset {
-			if ls.offset >= len(ls.index)-ls.height {
-				ls.offset = len(ls.index) - ls.height
-			}
-		}
+		ls.cursor = min(ls.cursor, len(ls.index)-1)
 		ls.width = msg.Width
 	}
 	return ls, nil
@@ -276,26 +250,19 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (ls ListScreen) View() string {
 	screen := ""
 
-	for i := 0; i < ls.height; i++ {
+	start := max(0, (ls.cursor)-(ls.height/2))
+	end := start + ls.height
 
-		if i+ls.offset >= len(ls.index) {
-			break
-		}
+	if end > len(ls.index) {
+		end = len(ls.index)
+		start = max(0, end-ls.height)
+	}
 
-		idx := i + ls.offset
-		if idx < 0 {
-			ls.offset = 0
-			idx = 0
-		}
-		if idx >= len(ls.index) {
-			idx = len(ls.index) - 1
-			ls.offset = idx - ls.height
-		}
-
-		entryMeta := ls.index[idx]
-		if i == 0 && ls.offset != 0 {
+	for i := start; i < end; i++ {
+		entryMeta := ls.index[i]
+		if i-start == 0 && start != 0 {
 			screen += "↑"
-		} else if i == ls.height-1 && i+ls.offset < len(ls.index)-1 {
+		} else if i-start == ls.height-1 && end < len(ls.index) {
 			screen += "↓"
 		} else {
 			screen += " "
@@ -304,14 +271,16 @@ func (ls ListScreen) View() string {
 		if name == "" {
 			name = "Untitled"
 		}
-		if i+ls.offset == ls.cursor {
+		// name += fmt.Sprintf(" start:%d end:%d i:%d ls.cursor:%d len(ls.index)-1:%d", start, end, i, ls.cursor, len(ls.index)-1)
+		if i == ls.cursor {
 			screen += fmt.Sprintf("%s\n", listStyleSelected.Render(name))
 		} else {
 			screen += fmt.Sprintf("│%s\n", listStyleUnselected.Render(name))
 		}
 	}
 	screen = strings.TrimSuffix(screen, "\n")
-	screen += strings.Repeat("\n │", max(0, ls.height-len(ls.index)))
+
+	screen += strings.Repeat("\n │", max(0, ls.height-(end-start)))
 	screen = strings.TrimPrefix(screen, "\n")
 	return fmt.Sprintf("%s\n%s", ls.headerView(), screen)
 }
