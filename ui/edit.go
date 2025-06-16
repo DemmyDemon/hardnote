@@ -74,7 +74,7 @@ func (es EditScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		es.entry = entry
 		es.text.SetValue(entry.Text)
 		es.cursorToBeginningFoulSmellingHack()
-		return es, tea.Batch(UpdateStatus(fmt.Sprintf("Loaded! %d", es.text.Line()), DirtStateClean), UpdateStatusName(es.Name()))
+		return es, tea.Batch(UpdateStatus(fmt.Sprintf("Loaded %q", msg.EntryMeta.Name), DirtStateClean), UpdateStatusName(es.Name()))
 	case tea.KeyMsg:
 		switch msg.String() {
 		case "ctrl+q", "ctrl+h", "ctrl+l", "\x00": // Noop, let statusbar handle
