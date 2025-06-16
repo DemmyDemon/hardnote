@@ -11,11 +11,19 @@ import (
 var pickStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
 	Foreground(lipgloss.Color("0")).
-	PaddingLeft(2).PaddingRight(1)
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderBackground(lipgloss.Color("0")).
+	BorderForeground(lipgloss.Color("15")).
+	BorderLeft(true).
+	PaddingLeft(1).PaddingRight(1)
 
 var pickStyleUnselected = lipgloss.NewStyle().
 	Background(lipgloss.Color("0")).
 	Foreground(lipgloss.Color("15")).
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderBackground(lipgloss.Color("0")).
+	BorderForeground(lipgloss.Color("15")).
+	BorderLeft(true).
 	PaddingLeft(1).PaddingRight(1)
 
 func PickOne(prompt string, options []string, action PickOneAction) tea.Cmd {
@@ -80,23 +88,48 @@ func (po PickOneScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		}
 	case tea.WindowSizeMsg:
-		po.height = msg.Height - 2 // Leave room for prompt, input and statusbar
+		po.height = msg.Height - 2 // Leave room for header and statusbar
 		po.width = msg.Width
 	}
 	return po, nil
 }
 
 func (po PickOneScreen) View() string {
-	s := fmt.Sprintf("─┤ %s ├", po.request.Prompt)
-	s += strings.Repeat("─", max(0, po.width-lipgloss.Width(s)))
-	s += "\n"
-	for i, option := range po.request.Options {
-		if i == po.cursor {
-			s += fmt.Sprintf(" %s\n", pickStyleSelected.Render(option))
-		} else {
-			s += fmt.Sprintf(" │%s\n", pickStyleUnselected.Render(option))
-		}
+
+	title := fmt.Sprintf("─┤ %s ├", po.request.Prompt)
+
+	var screen strings.Builder
+	screen.WriteString(title)
+	screen.WriteString(strings.Repeat("─", max(0, po.width-lipgloss.Width(title))))
+	screen.WriteRune('\n')
+
+	start := max(0, (po.cursor - (po.height / 2)))
+	end := start + po.height
+
+	if end > len(po.request.Options) {
+		end = len(po.request.Options)
+		start = max(0, end-po.height)
 	}
-	s += strings.Repeat(" │\n", max(0, po.height-len(po.request.Options)))
-	return strings.TrimSuffix(s, "\n")
+
+	for i := start; i < end; i++ {
+
+		if i-start == 0 && start != 0 {
+			screen.WriteRune('↑')
+		} else if i-start == po.height-1 && end < len(po.request.Options) {
+			screen.WriteRune('↓')
+		} else {
+			screen.WriteRune(' ')
+		}
+
+		option := po.request.Options[i]
+		if i == po.cursor {
+			screen.WriteString(pickStyleSelected.Render(option))
+		} else {
+			screen.WriteString(pickStyleUnselected.Render(option))
+		}
+		screen.WriteRune('\n')
+	}
+
+	screen.WriteString(strings.Repeat(" │\n", max(0, po.height-len(po.request.Options))))
+	return strings.TrimSuffix(screen.String(), "\n")
 }
