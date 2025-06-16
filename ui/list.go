@@ -20,10 +20,18 @@ var nonWordChars = regexp.MustCompile("[^\\w]+")
 var listStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
 	Foreground(lipgloss.Color("0")).
-	PaddingLeft(2).PaddingRight(1)
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderBackground(lipgloss.Color("0")).
+	BorderForeground(lipgloss.Color("15")).
+	BorderLeft(true).
+	PaddingLeft(1).PaddingRight(1)
 var listStyleUnselected = lipgloss.NewStyle().
 	Background(lipgloss.Color("0")).
 	Foreground(lipgloss.Color("15")).
+	BorderStyle(lipgloss.NormalBorder()).
+	BorderBackground(lipgloss.Color("0")).
+	BorderForeground(lipgloss.Color("15")).
+	BorderLeft(true).
 	PaddingLeft(1).PaddingRight(1)
 
 type IndexUpdateMsg struct {
@@ -248,7 +256,7 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (ls ListScreen) View() string {
-	screen := ""
+	var screen strings.Builder
 
 	start := max(0, (ls.cursor)-(ls.height/2))
 	end := start + ls.height
@@ -261,28 +269,27 @@ func (ls ListScreen) View() string {
 	for i := start; i < end; i++ {
 		entryMeta := ls.index[i]
 		if i-start == 0 && start != 0 {
-			screen += "↑"
+			screen.WriteRune('↑')
 		} else if i-start == ls.height-1 && end < len(ls.index) {
-			screen += "↓"
+			screen.WriteRune('↓')
 		} else {
-			screen += " "
+			screen.WriteRune(' ')
 		}
 		name := entryMeta.Name
 		if name == "" {
 			name = "Untitled"
 		}
-		// name += fmt.Sprintf(" start:%d end:%d i:%d ls.cursor:%d len(ls.index)-1:%d", start, end, i, ls.cursor, len(ls.index)-1)
-		if i == ls.cursor {
-			screen += fmt.Sprintf("%s\n", listStyleSelected.Render(name))
-		} else {
-			screen += fmt.Sprintf("│%s\n", listStyleUnselected.Render(name))
-		}
-	}
-	screen = strings.TrimSuffix(screen, "\n")
 
-	screen += strings.Repeat("\n │", max(0, ls.height-(end-start)))
-	screen = strings.TrimPrefix(screen, "\n")
-	return fmt.Sprintf("%s\n%s", ls.headerView(), screen)
+		if i == ls.cursor {
+			screen.WriteString(listStyleSelected.Render(name))
+		} else {
+			screen.WriteString(listStyleUnselected.Render(name))
+		}
+		screen.WriteRune('\n')
+	}
+
+	screen.WriteString(strings.Repeat(" │\n", max(0, ls.height-(end-start))))
+	return fmt.Sprintf("%s\n%s", ls.headerView(), strings.TrimSuffix(screen.String(), "\n"))
 }
 
 func (ls ListScreen) headerView() string {
