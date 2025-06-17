@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/DemmyDemon/hardnote/storage"
 	"github.com/charmbracelet/bubbles/textarea"
@@ -118,11 +117,6 @@ func (es EditScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (es EditScreen) View() string {
-	return fmt.Sprintf("%s\n%s", es.viewHeader(), es.text.View())
-}
-func (es EditScreen) viewHeader() string {
 	info := es.text.LineInfo()
-	header := fmt.Sprintf("─┤ %d:%d ├", es.text.Line()+1, info.CharOffset+info.StartColumn)
-	header += strings.Repeat("─", max(0, es.width-lipgloss.Width(header)))
-	return header
+	return unifiedHeader(fmt.Sprintf("%d:%d", es.text.Line()+1, info.CharOffset+info.StartColumn), es.width) + es.text.View()
 }

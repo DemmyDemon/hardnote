@@ -1,12 +1,10 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 func Ask(question string, answer string, placeholder string, action AskAnswerAction) tea.Cmd {
@@ -86,9 +84,7 @@ func (as AskScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (as AskScreen) View() string {
-	s := fmt.Sprintf("─┤ %s ├", as.question.Question)
-	s += strings.Repeat("─", max(0, as.width-lipgloss.Width(s)))
-	s += "\n"
+	s := unifiedHeader(as.question.Question, as.width)
 	s += as.input.View()
 	s += strings.Repeat("\n │", as.height)
 	return s

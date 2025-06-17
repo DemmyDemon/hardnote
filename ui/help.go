@@ -1,11 +1,9 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
-	"github.com/charmbracelet/lipgloss"
 )
 
 const defaultHelpTitle = "Help"
@@ -95,8 +93,7 @@ func (h HelpScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (h HelpScreen) View() string {
 	var sb strings.Builder
-	sb.WriteString(h.headerView())
-	sb.WriteRune('\n')
+	sb.WriteString(unifiedHeader(h.title, h.width))
 	for i := 0; i < h.height; i++ {
 		if i+h.offset >= len(h.lines) {
 			break
@@ -113,9 +110,4 @@ func (h HelpScreen) View() string {
 		sb.WriteRune('\n')
 	}
 	return strings.TrimSuffix(sb.String(), "\n") + strings.Repeat("\n │", max(0, h.height-len(h.lines)))
-}
-func (h HelpScreen) headerView() string {
-	title := fmt.Sprintf("─┤ %s ├", h.title)
-	line := strings.Repeat("─", max(0, h.width-lipgloss.Width(title)))
-	return title + line
 }

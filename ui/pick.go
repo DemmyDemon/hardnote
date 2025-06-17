@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -96,12 +95,8 @@ func (po PickOneScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (po PickOneScreen) View() string {
 
-	title := fmt.Sprintf("─┤ %s ├", po.request.Prompt)
-
 	var screen strings.Builder
-	screen.WriteString(title)
-	screen.WriteString(strings.Repeat("─", max(0, po.width-lipgloss.Width(title))))
-	screen.WriteRune('\n')
+	screen.WriteString(unifiedHeader(po.request.Prompt, po.width))
 
 	start := max(0, (po.cursor - (po.height / 2)))
 	end := start + po.height

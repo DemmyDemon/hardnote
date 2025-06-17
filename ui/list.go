@@ -258,6 +258,12 @@ func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (ls ListScreen) View() string {
 	var screen strings.Builder
 
+	title := "↑↓ Select an entry to edit"
+	if len(ls.index) == 0 {
+		title = "Press n to create a new entry"
+	}
+	screen.WriteString(unifiedHeader(title, ls.width))
+
 	start := max(0, (ls.cursor)-(ls.height/2))
 	end := start + ls.height
 
@@ -289,16 +295,7 @@ func (ls ListScreen) View() string {
 	}
 
 	screen.WriteString(strings.Repeat(" │\n", max(0, ls.height-(end-start))))
-	return fmt.Sprintf("%s\n%s", ls.headerView(), strings.TrimSuffix(screen.String(), "\n"))
-}
-
-func (ls ListScreen) headerView() string {
-	title := "─┤ ↑↓ Select an entry to edit ├"
-	if len(ls.index) == 0 {
-		title = "─┤ Press n to create a new entry ├"
-	}
-	line := strings.Repeat("─", max(0, ls.width-lipgloss.Width(title)))
-	return title + line
+	return strings.TrimSuffix(screen.String(), "\n")
 }
 
 func filename(original string) string {

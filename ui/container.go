@@ -2,9 +2,11 @@ package ui
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/DemmyDemon/hardnote/storage"
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
 )
 
 type uiState int
@@ -27,6 +29,12 @@ type UI struct {
 	ask       tea.Model
 	statusbar tea.Model
 	data      storage.Storage
+}
+
+func unifiedHeader(title string, width int) string {
+	title = fmt.Sprintf("═╤═╡ %s ╞", title)
+	line := strings.Repeat("═", max(0, width-lipgloss.Width(title)))
+	return title + line + "\n"
 }
 
 func New(name string, data storage.Storage) tea.Model {
