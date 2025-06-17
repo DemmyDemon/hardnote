@@ -11,8 +11,6 @@ var pickStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
 	Foreground(lipgloss.Color("0")).
 	BorderStyle(lipgloss.NormalBorder()).
-	BorderBackground(lipgloss.Color("0")).
-	BorderForeground(lipgloss.Color("15")).
 	BorderLeft(true).
 	PaddingLeft(1).PaddingRight(1)
 
@@ -20,8 +18,6 @@ var pickStyleUnselected = lipgloss.NewStyle().
 	Background(lipgloss.Color("0")).
 	Foreground(lipgloss.Color("15")).
 	BorderStyle(lipgloss.NormalBorder()).
-	BorderBackground(lipgloss.Color("0")).
-	BorderForeground(lipgloss.Color("15")).
 	BorderLeft(true).
 	PaddingLeft(1).PaddingRight(1)
 
