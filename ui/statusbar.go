@@ -107,7 +107,12 @@ func (sb Statusbar) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (sb Statusbar) View() string {
 
-	bar := fmt.Sprintf("─┤ %ss → %s ├", sb.file, sb.message)
+	message := ""
+	if sb.message != "" {
+		message = fmt.Sprintf(" → %s", sb.message)
+	}
+	bar := fmt.Sprintf("═╧═╡ %s%s ╞", sb.file, message)
+
 	if sb.name != "" {
 		var name string
 		if sb.dirty {
@@ -115,8 +120,8 @@ func (sb Statusbar) View() string {
 		} else {
 			name = clean.Render(sb.name)
 		}
-		bar = fmt.Sprintf("─┤ %s: %s → %s ├", sb.file, name, sb.message)
+		bar = fmt.Sprintf("═╧═╡ %s: %s%s ╞", sb.file, name, message)
 	}
-	line := strings.Repeat("─", max(0, sb.width-lipgloss.Width(bar)))
+	line := strings.Repeat("═", max(0, sb.width-(lipgloss.Width(bar))))
 	return bar + line
 }
