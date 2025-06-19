@@ -58,7 +58,7 @@ func (po PickOneScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case PickOneRequestMsg:
 		po.request = msg
-		if po.request.Options == nil || len(po.request.Options) == 0 {
+		if len(po.request.Options) == 0 {
 			po.request.Options = []string{"No", "Yes"}
 		}
 		po.cursor = 0

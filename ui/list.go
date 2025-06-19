@@ -15,7 +15,7 @@ import (
 
 const readSizeLimit = 3 * 1024 * 1024 // 3MiB
 
-var nonWordChars = regexp.MustCompile("[^\\w]+")
+var nonWordChars = regexp.MustCompile(`[^\\w]+`)
 
 var listStyleSelected = lipgloss.NewStyle().
 	Background(lipgloss.Color("15")).
@@ -73,7 +73,6 @@ func (ls *ListScreen) moveCursorUp() {
 	if ls.cursor < 0 {
 		ls.cursor = 0
 	}
-	return
 }
 
 func (ls *ListScreen) moveCursorDown() {
@@ -84,7 +83,6 @@ func (ls *ListScreen) moveCursorDown() {
 	if ls.cursor >= len(ls.index) {
 		ls.cursor = len(ls.index) - 1
 	}
-	return
 }
 
 func (ls ListScreen) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
